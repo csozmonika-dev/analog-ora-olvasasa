@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analóg Óra Olvasás Gyakorló</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .app-container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+        }
+
+        h2 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.6rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-value {
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+
+        .difficulty-selector {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .difficulty-selector label {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+        }
+
+        .difficulty-selector input[type="radio"] {
+            display: none;
+        }
+
+        .difficulty-selector input[type="radio"]:checked + span {
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .difficulty-selector label:has(input[type="radio"]:checked) {
+            border-color: var(--accent);
+            background-color: #ebf8ff;
+        }
+
+        .clock-wrapper {
+            margin: 15px auto;
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        canvas {
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: 6px solid var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            width: 75px;
+            height: 55px;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 5px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            flex: 1;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-check { background-color: var(--success); }
+        .btn-check:hover { background-color: #219653; }
+        .btn-new { background-color: var(--accent); }
+        .btn-new:hover { background-color: #2980b9; }
+
+        .feedback {
+            margin-top: 15px;
+            min-height: 48px;
+            font-size: 1.1em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            padding: 8px;
+            transition: all 0.3s;
+        }
+
+        .feedback.correct {
+            color: var(--success);
+            background-color: #e8f8f0;
+        }
+
+        .feedback.incorrect {
+            color: var(--danger);
+            background-color: #fde8e8;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <h2>Pontos idő leolvasása</h2>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span>Helyes válaszok</span>
+                <span id="score" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span>Sikerszéria 🔥</span>
+                <span id="streak" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <div class="difficulty-selector">
+            <label>
+                <input type="radio" name="difficulty" value="easy" checked onchange="changeDifficulty()">
+                <span>Könnyű (5 perces)</span>
+            </label>
+            <label>
+                <input type="radio" name="difficulty" value="exact" onchange="changeDifficulty()">
+                <span>Nehéz (pontos perc)</span>
+            </label>
+        </div>
+
+        <div class="clock-wrapper">
+            <canvas id="clockCanvas" width="240" height="240"></canvas>
+        </div>
+        
+        <div class="input-group">
+            <input type="number" id="inputHour" min="0" max="23" placeholder="ó" autocomplete="off" aria-label="Óra">
+            <span>:</span>
+            <input type="number" id="inputMinute" min="0" max="59" placeholder="p" autocomplete="off" aria-label="Perc">
+        </div>
+
+        <div class="controls">
+            <button class="btn-check" onclick="checkTime()">Ellenőrzés</button>
+            <button class="btn-new" onclick="initNewTime()">Új feladat</button>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+
+        <div class="hint">
+            Tipp: Az <b>Enter</b> gombbal ellenőrizheted a választ, vagy léphetsz a következő feladatra!
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("clockCanvas");
+        const ctx = canvas.getContext("2d");
+        const radius = canvas.width / 2;
+        
+        ctx.translate(radius, radius);
+        const clockRadius = radius * 0.90;
+
+        let targetHour = 0;
+        let targetMinute = 0;
+        let score = 0;
+        let streak = 0;
+        let isAnswered = false;
+
+        function changeDifficulty() {
+            initNewTime();
+        }
+
+        function initNewTime() {
+            const isEasy = document.querySelector('input[name="difficulty"]:checked').value === 'easy';
+            
+            targetHour = Math.floor(Math.random() * 12) + 1;
+            
+            if (isEasy) {
+                targetMinute = Math.floor(Math.random() * 12) * 5;
+            } else {
+                targetMinute = Math.floor(Math.random() * 60);
+            }
+
+            document.getElementById("inputHour").value = "";
+            document.getElementById("inputMinute").value = "";
+            
+            const feedbackEl = document.getElementById("feedback");
+            feedbackEl.textContent = "";
+            feedbackEl.className = "feedback";
+
+            isAnswered = false;
+            document.getElementById("inputHour").focus();
+            
+            drawClock();
+        }
+
+        function drawClock() {
+            // Összes elem törlése és újrarajzolása
+            ctx.clearRect(-radius, -radius, canvas.width, canvas.height);
+            drawFace(ctx, clockRadius);
+            drawTicks(ctx, clockRadius);
+            drawNumbers(ctx, clockRadius);
+            drawHands(ctx, clockRadius, targetHour, targetMinute);
+        }
+
+        function drawFace(ctx, radius) {
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            // Középső tengely
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.05, 0, 2 * Math.PI);
+            ctx.fillStyle = '#2c3e50';
+            ctx.fill();
+        }
+
+        function drawTicks(ctx, radius) {
+            for (let i = 0; i < 60; i++) {
+                let ang = i * Math.PI / 30;
+                ctx.beginPath();
+                ctx.rotate(ang);
+                
+                if (i % 5 === 0) {
+                    // Óra jelző vonalak (vastagabbak)
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#2c3e50';
+                    ctx.moveTo(0, -radius * 0.95);
+                    ctx.lineTo(0, -radius * 0.85);
+                } else {
+                    // Perc jelző vonalak (vékonyabbak)
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = '#95a5a6';
+                    ctx.moveTo(0, -radius * 0.95);
+                    ctx.lineTo(0, -radius * 0.90);
+                }
+                
+                ctx.stroke();
+                ctx.rotate(-ang);
+            }
+        }
+
+        function drawNumbers(ctx, radius) {
+            ctx.font = "bold " + (radius * 0.15) + "px 'Segoe UI', Arial";
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#2c3e50";
+            
+            for (let num = 1; num <= 12; num++) {
+                let ang = num * Math.PI / 6;
+                ctx.rotate(ang);
+                ctx.translate(0, -radius * 0.72);
+                ctx.rotate(-ang);
+                ctx.fillText(num.toString(), 0, 0);
+                ctx.rotate(ang);
+                ctx.translate(0, radius * 0.72);
+                ctx.rotate(-ang);
+            }
+        }
+
+        function drawHands(ctx, radius, hour, minute) {
+            // Óramutató szögének kiszámítása
+            let hourAngle = (hour % 12 * Math.PI / 6) + (minute * Math.PI / (6 * 60));
+            drawHand(ctx, hourAngle, radius * 0.50, radius * 0.07, '#2c3e50');
+
+            // Percmutató szögének kiszámítása
+            let minuteAngle = (minute * Math.PI / 30);
+            drawHand(ctx, minuteAngle, radius * 0.75, radius * 0.04, '#3498db');
+        }
+
+        function drawHand(ctx, pos, length, width, color) {
+            ctx.beginPath();
+            ctx.lineWidth = width;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = color;
+            ctx.moveTo(0, 0);
+            ctx.rotate(pos);
+            ctx.lineTo(0, -length);
+            ctx.stroke();
+            ctx.rotate(-pos);
+        }
+
+        function checkTime() {
+            if (isAnswered) {
+                initNewTime();
+                return;
+            }
+
+            const inputHourStr = document.getElementById("inputHour").value.trim();
+            const inputMinuteStr = document.getElementById("inputMinute").value.trim();
+            const feedbackEl = document.getElementById("feedback");
+
+            if (inputHourStr === "" || inputMinuteStr === "") {
+                feedbackEl.textContent = "Kérlek, töltsd ki mindkét mezőt!";
+                feedbackEl.className = "feedback incorrect";
+                return;
+            }
+
+            const inputHour = parseInt(inputHourStr, 10);
+            const inputMinute = parseInt(inputMinuteStr, 10);
+
+            if (isNaN(inputHour) || isNaN(inputMinute) || inputHour < 0 || inputHour > 23 || inputMinute < 0 || inputMinute > 59) {
+                feedbackEl.textContent = "Érvénytelen időérték! (Óra: 0-23, Perc: 0-59)";
+                feedbackEl.className = "feedback incorrect";
+                return;
+            }
+
+            const isHourCorrect = (inputHour % 12) === (targetHour % 12);
+            const isMinuteCorrect = inputMinute === targetMinute;
+
+            if (isHourCorrect && isMinuteCorrect) {
+                score++;
+                streak++;
+                document.getElementById("score").textContent = score;
+                document.getElementById("streak").textContent = streak;
+
+                feedbackEl.textContent = "🎉 Helyes megoldás! Kiváló munka!";
+                feedbackEl.className = "feedback correct";
+                isAnswered = true;
+            } else {
+                streak = 0;
+                document.getElementById("streak").textContent = streak;
+
+                const formattedMin = targetMinute < 10 ? '0' + targetMinute : targetMinute;
+                feedbackEl.textContent = `❌ Hibás. A helyes idő: ${targetHour}:${formattedMin} (vagy ${targetHour + 12}:${formattedMin})`;
+                feedbackEl.className = "feedback incorrect";
+            }
+        }
+
+        // Billentyűzet eseménykezelők (Enter támogatása mindkét beviteli mezőben)
+        document.getElementById("inputHour").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                document.getElementById("inputMinute").focus();
+            }
+        });
+
+        document.getElementById("inputMinute").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                checkTime();
+            }
+        });
+
+        // Kezdőállapot betöltése
+        window.onload = initNewTime;
+    </script>
+</body>
+</html>
